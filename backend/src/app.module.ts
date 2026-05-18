@@ -11,6 +11,8 @@ import { UsersModule } from './users/users.module';
 import { SensorsModule } from './sensors/sensors.module';
 import { ChatModule } from './chat/chat.module';
 import { TasksModule } from './tasks/tasks.module';
+import { DocumentsModule } from './documents/documents.module';
+import { CrmModule } from './crm/crm.module';
 
 // Entities (will be created)
 import { User } from './users/user.entity';
@@ -21,6 +23,8 @@ import { Station } from './common/station.entity';
 import { ChatGroup } from './chat/entities/chat-group.entity';
 import { ChatMessage } from './chat/entities/chat-message.entity';
 import { Task } from './tasks/entities/task.entity';
+import { Document, DocumentFolder, DocumentVersion } from './documents/entities/document.entity';
+import { Counterparty, CrmActivity, CrmProject } from './crm/entities/counterparty.entity';
 
 @Module({
   imports: [
@@ -38,7 +42,7 @@ import { Task } from './tasks/entities/task.entity';
       username: process.env.DATABASE_USER || 'geocontrol',
       password: process.env.DATABASE_PASSWORD || 'secure_password_change_me',
       database: process.env.DATABASE_NAME || 'geocontrol_db',
-      entities: [User, Role, Sensor, Party, Station, ChatGroup, ChatMessage, Task],
+      entities: [User, Role, Sensor, Party, Station, ChatGroup, ChatMessage, Task, Document, DocumentFolder, DocumentVersion, Counterparty, CrmActivity, CrmProject],
       synchronize: process.env.NODE_ENV === 'development',
       logging: process.env.NODE_ENV === 'development',
     }),
@@ -72,6 +76,8 @@ import { Task } from './tasks/entities/task.entity';
     SensorsModule,
     ChatModule,
     TasksModule,
+    DocumentsModule,
+    CrmModule,
   ],
 })
 export class AppModule {}
