@@ -1,34 +1,50 @@
-```
+# Dependencies
+node_modules/
+**/node_modules/
+.venv/
+venv/
+.Python
+
 # Environment variables
 .env
 .env.local
 .env.*
 
-# Dependencies
-.venv/
-venv/
+# Build outputs
+dist/
+build/
+coverage/
+target/
+htmlcov/
+.nyc_output/
+
+# TypeScript/JavaScript specific
+*.js.map
+*.tsbuildinfo
+.cache/
+
+# Python specific
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.pytest_cache/
 
 # Logs
 *.log
 
-# Testing
-.coverage
-coverage/
-htmlcov/
-.pytest_cache/
-
-# IDE
+# IDE specific
 .vscode/
 .idea/
 *.swp
 *.swo
 *.tmp
+*.temp
+*.bak
 
-# OS
+# OS generated files
 .DS_Store
 Thumbs.db
-```
+
+# Testing
+.coverage
