@@ -9,6 +9,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { SensorsModule } from './sensors/sensors.module';
+import { ChatModule } from './chat/chat.module';
+import { TasksModule } from './tasks/tasks.module';
 
 // Entities (will be created)
 import { User } from './users/user.entity';
@@ -16,6 +18,9 @@ import { Role } from './users/role.entity';
 import { Sensor } from './sensors/sensor.entity';
 import { Party } from './common/party.entity';
 import { Station } from './common/station.entity';
+import { ChatGroup } from './chat/entities/chat-group.entity';
+import { ChatMessage } from './chat/entities/chat-message.entity';
+import { Task } from './tasks/entities/task.entity';
 
 @Module({
   imports: [
@@ -33,7 +38,7 @@ import { Station } from './common/station.entity';
       username: process.env.DATABASE_USER || 'geocontrol',
       password: process.env.DATABASE_PASSWORD || 'secure_password_change_me',
       database: process.env.DATABASE_NAME || 'geocontrol_db',
-      entities: [User, Role, Sensor, Party, Station],
+      entities: [User, Role, Sensor, Party, Station, ChatGroup, ChatMessage, Task],
       synchronize: process.env.NODE_ENV === 'development',
       logging: process.env.NODE_ENV === 'development',
     }),
@@ -65,6 +70,8 @@ import { Station } from './common/station.entity';
     AuthModule,
     UsersModule,
     SensorsModule,
+    ChatModule,
+    TasksModule,
   ],
 })
 export class AppModule {}
