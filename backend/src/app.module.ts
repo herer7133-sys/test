@@ -13,6 +13,8 @@ import { ChatModule } from './chat/chat.module';
 import { TasksModule } from './tasks/tasks.module';
 import { DocumentsModule } from './documents/documents.module';
 import { CrmModule } from './crm/crm.module';
+import { TrainingModule } from './training/training.module';
+import { SchedulesModule } from './schedules/schedules.module';
 
 // Entities (will be created)
 import { User } from './users/user.entity';
@@ -25,6 +27,8 @@ import { ChatMessage } from './chat/entities/chat-message.entity';
 import { Task } from './tasks/entities/task.entity';
 import { Document, DocumentFolder, DocumentVersion } from './documents/entities/document.entity';
 import { Counterparty, CrmActivity, CrmProject } from './crm/entities/counterparty.entity';
+import { TrainingMaterial, MaterialResource, UserProgress } from './training/entities/training-material.entity';
+import { WorkSchedule, UserWorkRecord } from './schedules/entities/work-schedule.entity';
 
 @Module({
   imports: [
@@ -42,7 +46,7 @@ import { Counterparty, CrmActivity, CrmProject } from './crm/entities/counterpar
       username: process.env.DATABASE_USER || 'geocontrol',
       password: process.env.DATABASE_PASSWORD || 'secure_password_change_me',
       database: process.env.DATABASE_NAME || 'geocontrol_db',
-      entities: [User, Role, Sensor, Party, Station, ChatGroup, ChatMessage, Task, Document, DocumentFolder, DocumentVersion, Counterparty, CrmActivity, CrmProject],
+      entities: [User, Role, Sensor, Party, Station, ChatGroup, ChatMessage, Task, Document, DocumentFolder, DocumentVersion, Counterparty, CrmActivity, CrmProject, TrainingMaterial, MaterialResource, UserProgress, WorkSchedule, UserWorkRecord],
       synchronize: process.env.NODE_ENV === 'development',
       logging: process.env.NODE_ENV === 'development',
     }),
@@ -78,6 +82,8 @@ import { Counterparty, CrmActivity, CrmProject } from './crm/entities/counterpar
     TasksModule,
     DocumentsModule,
     CrmModule,
+    TrainingModule,
+    SchedulesModule,
   ],
 })
 export class AppModule {}
