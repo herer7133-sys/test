@@ -1,0 +1,36 @@
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+import { ConfigService } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
+
+import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { LocalStrategy } from './strategies/local.strategy';
+import { User, UserBackupCode } from '../users/user.entity';
+import { Role } from '../users/role.entity';
+import { UsersModule } from '../users/users.module';
+
+@Module({
+  imports: [
+    UsersModule,
+    TypeOrmModule.forFeature([User, UserBackupCode, Role]),
+    PassportModule,
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get('JWT_SECRET', 'super_secret_jwt_key_change_me'),
+        signOptions: {
+          expiresIn: '15m', // Access token expires in 15 minutes
+        },
+      }),
+    }),
+    ThrottlerModule,
+  ],
+  providers: [AuthService, JwtStrategy, LocalStrategy],
+  controllers: [AuthController],
+  exports: [AuthService],
+})
+export class AuthModule {}
