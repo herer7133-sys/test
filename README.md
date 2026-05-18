@@ -1,194 +1,144 @@
-# 🚀 Портал ООО "Геоконтроль"
+# Портал ООО "Геоконтроль"
 
 Корпоративная платформа для управления датчиками, задачами, чатами и AI-аналитикой.
 
-## 📦 Стек технологий
+## 🏗️ Архитектура
 
-### Backend
-- **NestJS** (Node.js) - основной API сервер
-- **FastAPI** (Python) - ML сервис
-- **PostgreSQL 15** - база данных
-- **Redis** - кеш и сессии
-- **MinIO** - объектное хранилище
-- **Socket.IO** - WebSocket для чата
+```
+┌─────────────┐     ┌──────────────┐     ┌─────────────┐
+│  Frontend   │────▶│   Backend    │────▶│  ML Service │
+│ React+Vite  │◀────│   NestJS     │◀────│   FastAPI   │
+└─────────────┘     └──────────────┘     └─────────────┘
+                           │
+         ┌─────────────────┼─────────────────┐
+         ▼                 ▼                 ▼
+   ┌──────────┐     ┌──────────┐     ┌──────────┐
+   │PostgreSQL│     │  Redis   │     │  MinIO   │
+   │  Database│     │  Cache   │     │ Storage  │
+   └──────────┘     └──────────┘     └──────────┘
+```
 
-### Frontend
-- **React 18** + **TypeScript**
-- **Vite** - сборка
-- **Tailwind CSS** - стили
-- **Zustand** - состояние
-- **React Query** - кеш API
-- **React DnD** - drag&drop для Kanban
+## 📦 Модули
 
-### DevOps
-- **Docker** + **Docker Compose**
-- **Prometheus** + **Grafana** - мониторинг
+### ✅ Реализовано
+- **Auth** - JWT аутентификация, TOTP 2FA, RBAC
+- **Users** - Управление пользователями и ролями
+- **Sensors** - Учет датчиков, токенизация, QR-коды, схемы
+- **Chat** - Личные/групповые чаты, WebSocket, файлы
+- **Tasks** - Kanban-доска, задачи, чек-листы
+- **CRM** - Контрагенты, проекты, активности
+- **Documents** - Папки, версионирование, права доступа
+- **Training** - Учебные материалы, прогресс
+- **Schedules** - Графики смен, учет времени
+- **ML Service** - Прогнозы поверки, аномалии, риск-скоринг
+
+### 🔜 В разработке
+- Frontend компоненты
+- Интеграция AI с основным бэкендом
+- E2E тесты
+- CI/CD пайплайны
 
 ## 🚀 Быстрый старт
 
-### 1. Запуск инфраструктуры
+### Требования
+- Docker & Docker Compose
+- Node.js 18+ (для локальной разработки)
+- Python 3.11+ (для ML сервиса)
+
+### Запуск через Docker
 
 ```bash
+# Запустить все сервисы
 docker-compose up -d
+
+# Проверить логи
+docker-compose logs -f
 ```
 
-Это запустит:
-- PostgreSQL (порт 5432)
-- Redis (порт 6379)
-- MinIO (порт 9000, консоль 9001)
-- Backend API (порт 3001)
-- Frontend (порт 3000)
-- ML Service (порт 8000)
+Сервисы будут доступны:
+- **Backend API**: http://localhost:3000
+- **ML Service**: http://localhost:8000
+- **PostgreSQL**: localhost:5432
+- **Redis**: localhost:6379
+- **MinIO Console**: http://localhost:9001
 
-### 2. Установка зависимостей
+### Локальная разработка
 
+#### Backend (NestJS)
 ```bash
-# Backend
 cd backend
 npm install
+npm run start:dev
+```
 
-# Frontend
-cd frontend
-npm install
-
-# ML Service
+#### ML Service (FastAPI)
+```bash
 cd ml-service
 pip install -r requirements.txt
+uvicorn main:app --reload
 ```
 
-### 3. Настройка переменных окружения
+## 📡 API Документация
 
-Скопируйте `.env.example` в `.env` и настройте:
+- **Backend Swagger**: http://localhost:3000/api/docs
+- **ML Service Swagger**: http://localhost:8000/docs
+
+### Основные эндпоинты
+
+#### Auth
+```
+POST /auth/login          - Вход (email + password + TOTP)
+POST /auth/refresh        - Обновление токена
+POST /auth/logout         - Выход
+```
+
+#### Sensors
+```
+GET  /sensors             - Список датчиков
+POST /sensors             - Создать датчик
+GET  /sensors/:id         - Детали датчика
+POST /sensors/:id/move    - Заявка на перемещение
+```
+
+#### AI/ML
+```
+POST /predict/calibration/:id  - Прогноз поверки
+POST /detect/anomaly/:id       - Обнаружение аномалий
+GET  /sensors/:id/risk         - Оценка риска
+```
+
+## 🔐 Роли
+
+| Роль | Описание |
+|------|----------|
+| `guest` | Гость |
+| `user` | Пользователь |
+| `engineer` | Инженер |
+| `supervisor` | Руководитель |
+| `admin` | Администратор |
+| `superadmin` | Суперадмин |
+
+## 🧪 Тестирование
 
 ```bash
-cp .env.example .env
+# Backend тесты
+cd backend && npm run test
+
+# ML Service тесты
+cd ml-service && pytest tests/ -v
 ```
 
-### 4. Запуск в режиме разработки
-
-```bash
-# Backend (из корня проекта)
-npm run dev:backend
-
-# Frontend (в другом терминале)
-npm run dev:frontend
-
-# ML Service (в третьем терминале)
-npm run dev:ml
-```
-
-## 📁 Структура проекта
+## 📁 Структура
 
 ```
-/workspace
-├── backend/                 # NestJS API
-│   ├── src/
-│   │   ├── auth/           # Аутентификация (JWT, 2FA, RBAC)
-│   │   ├── users/          # Управление пользователями
-│   │   ├── sensors/        # Учет датчиков (токены, QR, перемещения)
-│   │   ├── chat/           # Чат (WebSocket, группы, файлы)
-│   │   ├── tasks/          # Задачи (Kanban, чек-листы)
-│   │   ├── minio/          # Работа с файлами
-│   │   └── app.module.ts
-│   └── package.json
-├── frontend/               # React приложение
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── chat/      # Компоненты чата
-│   │   │   └── tasks/     # Kanban доска
-│   │   ├── hooks/         # Custom hooks (useChat, useTasks)
-│   │   ├── services/      # API клиент
-│   │   └── types/         # TypeScript типы
-│   └── package.json
-├── ml-service/            # FastAPI ML сервис
-│   ├── main.py
-│   └── requirements.txt
+geocontrol/
+├── backend/           # NestJS API
+├── frontend/          # React приложение  
+├── ml-service/        # FastAPI ML сервис
+├── infra/             # Инфраструктура (БД)
 ├── docker-compose.yml
 └── README.md
 ```
 
-## 🔐 Роли пользователей
-
-| Роль | Описание |
-|------|----------|
-| `guest` | Только просмотр публичных данных |
-| `user` | Базовый доступ к задачам и чату |
-| `engineer` | Редактирование датчиков, создание заявок |
-| `supervisor` | Управление командой, утверждение заявок |
-| `admin` | Полный доступ ко всем модулям |
-| `superadmin` | Системные настройки, управление ролями |
-
-## 📡 API Endpoints
-
-### Аутентификация
-- `POST /auth/login` - Вход (логин + пароль + TOTP)
-- `POST /auth/refresh` - Обновление токена
-- `POST /auth/2fa/verify` - Проверка 2FA кода
-
-### Датчики
-- `GET /sensors` - Список датчиков с фильтрами
-- `POST /sensors` - Создание датчика (авто-генерация токена)
-- `GET /sensors/:id` - Карточка датчика
-- `POST /sensors/:id/move` - Заявка на перемещение
-- `GET /sensors/scan/:token` - Публичный скан (QR)
-
-### Чат
-- `GET /chat/groups/me` - Мои группы
-- `POST /chat/groups` - Создать группу
-- `GET /chat/groups/:id/messages` - Сообщения группы
-- `POST /chat/messages` - Отправить сообщение
-- `WS /chat` - WebSocket подключение
-
-### Задачи
-- `GET /tasks` - Список задач
-- `GET /tasks/kanban` - Данные для Kanban доски
-- `POST /tasks` - Создать задачу
-- `POST /tasks/:id/move` - Переместить задачу
-- `PUT /tasks/:id` - Обновить задачу
-
-### AI
-- `GET /ai/sensors/:id/risk` - Оценка риска датчика
-- `POST /ai/feedback` - Обратная связь по предсказанию
-- `PUT /ai/models/:name/config` - Настройка модели (admin)
-
-## 🧪 Тесты
-
-```bash
-# Backend тесты
-cd backend
-npm run test          # Unit тесты
-npm run test:e2e      # E2E тесты
-npm run test:cov      # Покрытие кода
-
-# Frontend тесты
-cd frontend
-npm run test
-npm run test:e2e      # Playwright
-```
-
-## 📊 Мониторинг
-
-- **Prometheus**: http://localhost:9090
-- **Grafana**: http://localhost:3003 (admin/admin)
-- **MinIO Console**: http://localhost:9001
-
-## 🔒 Безопасность
-
-- Пароли хешируются через **Argon2id**
-- TOTP секреты шифруются (**AES-256**)
-- Rate limiting: 5 login/15min, 100 API-req/min
-- RBAC проверка на уровне middleware
-- Аудит всех мутаций в таблице `audit_log`
-- Файлы доступны по подписанным URL с экспайром
-
-## 🤖 AI Модуль
-
-ML сервис предоставляет:
-- Прогноз даты поверки датчиков (Prophet)
-- Обнаружение аномалий перемещений
-- Risk scoring датчиков
-- Ежедневные алёрты (за 90 дней до поверки)
-
-## 📝 Лицензия
-
-© 2024 ООО "Геоконтроль". Все права защищены.
+---
+**Версия**: 1.0.0 | **Статус**: Активная разработка

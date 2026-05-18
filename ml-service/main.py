@@ -1,50 +1,34 @@
+"""
+GeoControl ML Service - AI/ML predictions for sensor monitoring
+"""
 from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta
-import random
+from datetime import datetime
+from typing import List, Dict, Any, Optional
 
-app = FastAPI(
-    title="GeoControl ML Service",
-    description="AI/ML predictions for sensor anomaly detection and calibration forecasting",
-    version="1.0.0",
+from .config import settings
+from .models import (
+    CalibrationPrediction,
+    AnomalyDetectionResult,
+    RiskScorePrediction,
+    ModelConfigUpdate,
+    FeedbackRequest,
+    HealthResponse,
+)
+from .predictors import (
+    calibration_predictor,
+    anomaly_detector,
+    risk_scorer,
 )
 
-# --- Models ---
+# Create FastAPI app
+app = FastAPI(
+    title=settings.app_name,
+    description="AI/ML predictions for sensor anomaly detection and calibration forecasting",
+    version="1.0.0",
+    debug=settings.debug,
+)
 
-class CalibrationPrediction(BaseModel):
-    sensor_id: int
-    predicted_date: datetime
-    confidence: float = Field(ge=0, le=1)
-    days_until_due: int
-    recommendation: str
-
-class AnomalyDetectionResult(BaseModel):
-    sensor_id: int
-    is_anomaly: bool
-    anomaly_score: float = Field(ge=0, le=1)
-    anomaly_type: Optional[str] = None
-    details: Dict[str, Any] = {}
-
-class RiskScorePrediction(BaseModel):
-    sensor_id: int
-    risk_score: float = Field(ge=0, le=100)
-    risk_level: str  # low, medium, high, critical
-    factors: Dict[str, float]
-    recommendations: List[str]
-
-class ModelConfigUpdate(BaseModel):
-    feature_weights: Optional[Dict[str, float]] = None
-    alert_thresholds: Optional[Dict[str, float]] = None
-
-class FeedbackRequest(BaseModel):
-    prediction_id: Optional[int] = None
-    entity_type: str
-    entity_id: int
-    is_correct: bool
-    comment: Optional[str] = None
-
-# --- In-memory storage (replace with DB in production) ---
+# In-memory storage for predictions and feedback
 predictions_store: Dict[int, Any] = {}
 model_configs = {
     "calibration_forecast": {
@@ -55,7 +39,7 @@ model_configs = {
             "movement_count": 0.20,
         },
         "alert_thresholds": {
-            "days_warning": 90,
+            "days_warning": settings.calibration_warning_days,
             "confidence_min": 0.7,
         }
     },
@@ -80,123 +64,36 @@ model_configs = {
             "timing_anomaly": 0.25,
         },
         "alert_thresholds": {
-            "anomaly_score_threshold": 0.7,
+            "anomaly_score_threshold": settings.anomaly_threshold,
         }
     }
 }
 
-# --- Helper functions ---
 
-def get_risk_level(score: float) -> str:
-    thresholds = model_configs["risk_scorer"]["alert_thresholds"]
-    if score >= thresholds["critical"]:
-        return "critical"
-    elif score >= thresholds["high"]:
-        return "high"
-    elif score >= thresholds["medium"]:
-        return "medium"
-    else:
-        return "low"
-
-def simulate_calibration_prediction(sensor_id: int) -> CalibrationPrediction:
-    """Simulate calibration date prediction using historical patterns"""
-    # In production: load actual model and predict
-    base_days = random.randint(280, 400)
-    variance = random.randint(-30, 30)
-    days_until = base_days + variance
-    
-    predicted_date = datetime.now() + timedelta(days=days_until)
-    confidence = random.uniform(0.75, 0.95)
-    
-    if days_until <= 30:
-        recommendation = "URGENT: Schedule calibration immediately"
-    elif days_until <= 90:
-        recommendation = "WARNING: Plan calibration within 90 days"
-    else:
-        recommendation = "OK: No immediate action required"
-    
-    return CalibrationPrediction(
-        sensor_id=sensor_id,
-        predicted_date=predicted_date,
-        confidence=confidence,
-        days_until_due=days_until,
-        recommendation=recommendation
-    )
-
-def simulate_anomaly_detection(sensor_id: int, movements: List[Dict]) -> AnomalyDetectionResult:
-    """Detect anomalies in sensor movement patterns"""
-    # In production: use trained ML model
-    anomaly_score = random.uniform(0, 1)
-    is_anomaly = anomaly_score > model_configs["anomaly_detector"]["alert_thresholds"]["anomaly_score_threshold"]
-    
-    anomaly_type = None
-    details = {}
-    
-    if is_anomaly:
-        anomaly_types = ["unexpected_location", "unusual_timing", "frequent_movement", "position_drift"]
-        anomaly_type = random.choice(anomaly_types)
-        details = {
-            "detected_at": datetime.now().isoformat(),
-            "severity": "high" if anomaly_score > 0.85 else "medium",
-        }
-    
-    return AnomalyDetectionResult(
-        sensor_id=sensor_id,
-        is_anomaly=is_anomaly,
-        anomaly_score=anomaly_score,
-        anomaly_type=anomaly_type,
-        details=details
-    )
-
-def calculate_risk_score(sensor_id: int, sensor_data: Dict) -> RiskScorePrediction:
-    """Calculate comprehensive risk score for a sensor"""
-    # In production: use ensemble of models
-    weights = model_configs["risk_scorer"]["feature_weights"]
-    
-    # Simulate feature calculation
-    features = {
-        "days_since_calibration": random.uniform(0, 1),
-        "anomaly_history": random.uniform(0, 1),
-        "movement_frequency": random.uniform(0, 1),
-        "environment_severity": random.uniform(0, 1),
-    }
-    
-    # Weighted sum
-    risk_score = sum(features[k] * weights.get(k, 0.25) for k in features) * 100
-    
-    risk_level = get_risk_level(risk_score)
-    
-    recommendations = []
-    if risk_level in ["high", "critical"]:
-        recommendations.append("Schedule immediate inspection")
-        recommendations.append("Review recent movement history")
-    if risk_level == "critical":
-        recommendations.append("Consider temporary deactivation")
-    elif risk_level == "low":
-        recommendations.append("Continue normal monitoring")
-    
-    return RiskScorePrediction(
-        sensor_id=sensor_id,
-        risk_score=risk_score,
-        risk_level=risk_level,
-        factors=features,
-        recommendations=recommendations
-    )
-
-# --- Endpoints ---
-
-@app.get("/")
+@app.get("/", response_model=Dict[str, str])
 async def root():
-    return {"message": "GeoControl ML Service is running", "version": "1.0.0"}
+    """Root endpoint - service info"""
+    return {
+        "message": "GeoControl ML Service is running",
+        "version": "1.0.0",
+        "status": "healthy"
+    }
 
-@app.get("/health")
+
+@app.get("/health", response_model=HealthResponse)
 async def health_check():
-    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+    """Health check endpoint"""
+    return HealthResponse(
+        status="healthy",
+        timestamp=datetime.now(),
+        version="1.0.0"
+    )
+
 
 @app.post("/predict/calibration/{sensor_id}", response_model=CalibrationPrediction)
 async def predict_calibration(sensor_id: int):
     """Predict next calibration date for a sensor"""
-    prediction = simulate_calibration_prediction(sensor_id)
+    prediction = calibration_predictor.predict(sensor_id)
     
     # Store prediction
     pred_id = len(predictions_store) + 1
@@ -209,11 +106,15 @@ async def predict_calibration(sensor_id: int):
     
     return prediction
 
+
 @app.post("/detect/anomaly/{sensor_id}", response_model=AnomalyDetectionResult)
-async def detect_anomaly(sensor_id: int, movements: Optional[List[Dict]] = None):
+async def detect_anomaly(
+    sensor_id: int, 
+    movements: Optional[List[Dict]] = None
+):
     """Detect anomalies in sensor movement patterns"""
     movements = movements or []
-    result = simulate_anomaly_detection(sensor_id, movements)
+    result = anomaly_detector.detect(sensor_id, movements)
     
     # Store prediction
     pred_id = len(predictions_store) + 1
@@ -226,36 +127,55 @@ async def detect_anomaly(sensor_id: int, movements: Optional[List[Dict]] = None)
     
     return result
 
+
 @app.get("/sensors/{sensor_id}/risk", response_model=RiskScorePrediction)
-async def get_risk_score(sensor_id: int, sensor_data: Optional[Dict] = None):
+async def get_risk_score(
+    sensor_id: int, 
+    sensor_data: Optional[Dict] = None
+):
     """Get comprehensive risk score for a sensor"""
     sensor_data = sensor_data or {}
-    prediction = calculate_risk_score(sensor_id, sensor_data)
+    prediction = risk_scorer.calculate(sensor_id, sensor_data)
     
     return prediction
+
 
 @app.get("/ai/models/{model_name}/config")
 async def get_model_config(model_name: str):
     """Get configuration for a specific ML model"""
     if model_name not in model_configs:
-        raise HTTPException(status_code=404, detail=f"Model '{model_name}' not found")
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Model '{model_name}' not found"
+        )
     
     return {
         "model_name": model_name,
         "config": model_configs[model_name]
     }
 
+
 @app.put("/ai/models/{model_name}/config")
-async def update_model_config(model_name: str, config_update: ModelConfigUpdate):
+async def update_model_config(
+    model_name: str, 
+    config_update: ModelConfigUpdate
+):
     """Update model configuration (admin only)"""
     if model_name not in model_configs:
-        raise HTTPException(status_code=404, detail=f"Model '{model_name}' not found")
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Model '{model_name}' not found"
+        )
     
     if config_update.feature_weights:
-        model_configs[model_name]["feature_weights"].update(config_update.feature_weights)
+        model_configs[model_name]["feature_weights"].update(
+            config_update.feature_weights
+        )
     
     if config_update.alert_thresholds:
-        model_configs[model_name]["alert_thresholds"].update(config_update.alert_thresholds)
+        model_configs[model_name]["alert_thresholds"].update(
+            config_update.alert_thresholds
+        )
     
     return {
         "message": f"Configuration updated for model '{model_name}'",
@@ -263,10 +183,11 @@ async def update_model_config(model_name: str, config_update: ModelConfigUpdate)
         "updated_at": datetime.now().isoformat()
     }
 
+
 @app.post("/ai/feedback")
 async def submit_feedback(feedback: FeedbackRequest):
     """Submit feedback on AI predictions for model improvement"""
-    feedback_id = len(predictions_store) + 1000  # Separate ID space
+    feedback_id = len(predictions_store) + 1000
     
     # Store feedback for later model retraining
     predictions_store[feedback_id] = {
@@ -280,16 +201,22 @@ async def submit_feedback(feedback: FeedbackRequest):
         "feedback_id": feedback_id
     }
 
+
 @app.get("/ai/alerts/pending")
 async def get_pending_alerts():
-    """Get list of sensors requiring attention (calibration due soon, high risk, etc.)"""
-    # Simulate alerts - in production, query from DB/cache
+    """Get list of sensors requiring attention"""
+    import random
+    
     alerts = []
     
     # Simulate some alerts
     for i in range(random.randint(0, 5)):
         sensor_id = random.randint(1, 100)
-        alert_type = random.choice(["calibration_soon", "high_risk", "anomaly_detected"])
+        alert_type = random.choice([
+            "calibration_soon", 
+            "high_risk", 
+            "anomaly_detected"
+        ])
         
         if alert_type == "calibration_soon":
             alerts.append({
@@ -317,7 +244,3 @@ async def get_pending_alerts():
             })
     
     return {"alerts": alerts, "count": len(alerts)}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
